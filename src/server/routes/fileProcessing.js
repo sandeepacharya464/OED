@@ -18,6 +18,22 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authenticator);
+
+// to ingest file from http request for non-mamac meters. WIP. Need to finalize parameters needed and continue the work
+router.post('/readings/:meter_id', upload.single('csvFile'), async (req, res) => {
+	const validParams = {
+		type: 'object',
+		maxProperties: 1,
+		required: ['meter_id'],
+		properties: {
+			meter_id: {
+				type: 'string',
+				pattern: '^\\d+$'
+			}
+		}
+	};
+})
+
 router.post('/readings/:meter_id', upload.single('csvFile'), async (req, res) => {
 	const validParams = {
 		type: 'object',
