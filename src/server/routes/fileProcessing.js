@@ -22,7 +22,7 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authenticator);
-router.post('/readings/:meter_id', upload.single('csvFile'), async (req, res) => {
+router.post('/readings/:meterName/:cumulativeFlag/:reverseFlag/:intervalRange', upload.single('csvFile'), async (req, res) => {
 	const validParams = {
 		type: 'object',
 		maxProperties: 1,
@@ -39,7 +39,77 @@ router.post('/readings/:meter_id', upload.single('csvFile'), async (req, res) =>
 	} else {
 		try {
 			const rows = await parseCsv(req.file.buffer.toString());
-			console.log(rows);
+			const reverse = req.params.reverseFlag;
+			const interval = req.params.intervalRange;
+			const meterName = req.params.meterName;
+			const cumulative = req.params.cumulativeFlag;
+
+			const rowArray = [];
+			const readingArray = [];
+			for(const row of rows){
+				rowArray.push(row);
+				if(!reverse){
+					if(!cumulative){
+
+					}
+					else {
+
+					}
+				}
+				else {
+					if(!cumulative) {
+
+					}
+					else {
+
+					}
+				}
+			}
+
+			const id = parseInt(req.params.meter_id);
+			const myReadableStreamBuffer = new streamBuffers.ReadableStreamBuffer({
+				frequency: 10,
+				chunkSize: 2048
+			});
+			myReadableStreamBuffer.put(req.file.buffer);
+			// stop() indicates we are done putting the data in our readable stream.
+			myReadableStreamBuffer.stop();
+			try {
+				await streamToDB(myReadableStreamBuffer, row => {
+					const readRate = Number(row[0]);
+					const endTimestamp = moment(row[1], 'MM/DD/YYYY HH:mm');
+					const startTimestamp = moment(row[1], 'MM/DD/YYYY HH:mm').subtract(60, 'minutes');
+					return new Reading(id, readRate, startTimestamp, endTimestamp);
+				}, (readings, tx) => Reading.insertOrIgnoreAll(readings, tx));
+				res.status(200).json({ success: true });
+			} catch (e) {
+				res.status(403).json({ success: false });
+			}
+		} catch (err) {
+			res.status(400).send({
+				success: false,
+				message: 'Incorrect file type.'
+			});
+		}
+	}
+});
+
+router.post('/readings/:meter_id', upload.single('csvFile'), async (req, res) => {
+	const validParams = {
+		type: 'object',
+		maxProperties: 1,
+		required: ['meter_id'],
+		properties: {
+			meter_id: {
+				type: 'string',
+				pattern: '^\\d+$'
+			}
+		}
+	};
+	if (!validate(req.params, validParams).valid) {
+		res.sendStatus(400);
+	} else {
+		try {
 			const id = parseInt(req.params.meter_id);
 			const myReadableStreamBuffer = new streamBuffers.ReadableStreamBuffer({
 				frequency: 10,
@@ -94,5 +164,7 @@ router.post('/meters', async (req, res) => {
 		}
 	}
 });
+
+
 
 module.exports = router;
