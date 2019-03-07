@@ -37,34 +37,26 @@ router.post('/readings/:meterName/:cumulativeFlag/:reverseFlag/:intervalRange', 
 	if (!validate(req.params, validParams).valid) {
 		res.sendStatus(400);
 	} else {
-		try {
-			const rows = await parseCsv(req.file.buffer.toString());
-			const reverse = req.params.reverseFlag;
-			const interval = req.params.intervalRange;
-			const meterName = req.params.meterName;
-			const cumulative = req.params.cumulativeFlag;
-
-			const rowArray = [];
-			const readingArray = [];
-			for(const row of rows){
-				rowArray.push(row);
-				if(!reverse){
-					if(!cumulative){
-
-					}
-					else {
-
-					}
-				}
-				else {
-					if(!cumulative) {
-
-					}
-					else {
-
-					}
-				}
-			}
+		// try {
+		// 	const rows = await parseCsv(req.file.buffer.toString());
+		// 	const reverse = req.params.reverseFlag;
+		// 	const interval = req.params.intervalRange;
+		// 	const meterName = req.params.meterName;
+		// 	const cumulative = req.params.cumulativeFlag;
+        //
+		// 	const rowArray = [];
+		// 	const readingArray = [];
+		// 	for(const row of rows){
+		// 		rowArray.push(row);
+		// 		if(!reverse){
+		// 			if(!cumulative){}
+		// 			else {}
+		// 		}
+		// 		else {
+		// 			if(!cumulative) {}
+		// 			else {}
+		// 		}
+		// 	}
 
 			const id = parseInt(req.params.meter_id);
 			const myReadableStreamBuffer = new streamBuffers.ReadableStreamBuffer({
