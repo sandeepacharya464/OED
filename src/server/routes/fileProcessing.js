@@ -22,7 +22,7 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authenticator);
-router.post('/readings/:meterName/:cumulativeFlag/:reverseFlag/:intervalRange', upload.single('csvFile'), async (req, res) => {
+router.post('/readings/:meterId/:cumulativeFlag/:reverseFlag/:intervalRange', upload.single('csvFile'), async (req, res) => {
 	const validParams = {
 		type: 'object',
 		maxProperties: 1,
@@ -37,26 +37,59 @@ router.post('/readings/:meterName/:cumulativeFlag/:reverseFlag/:intervalRange', 
 	if (!validate(req.params, validParams).valid) {
 		res.sendStatus(400);
 	} else {
-		// try {
-		// 	const rows = await parseCsv(req.file.buffer.toString());
-		// 	const reverse = req.params.reverseFlag;
-		// 	const interval = req.params.intervalRange;
-		// 	const meterName = req.params.meterName;
-		// 	const cumulative = req.params.cumulativeFlag;
-        //
-		// 	const rowArray = [];
-		// 	const readingArray = [];
-		// 	for(const row of rows){
-		// 		rowArray.push(row);
-		// 		if(!reverse){
-		// 			if(!cumulative){}
-		// 			else {}
-		// 		}
-		// 		else {
-		// 			if(!cumulative) {}
-		// 			else {}
-		// 		}
-		// 	}
+		try {
+			const rows = await parseCsv(req.file.buffer.toString());
+			const reverse = req.params.reverseFlag;
+			const interval = req.params.intervalRange;
+			const meterId = req.params.meterName;
+			const cumulative = req.params.cumulativeFlag;
+
+			const rowArray = [];
+			const readingArray = [];
+			let startTimestamp = moment(0);
+			let endTimestamp = moment(0);
+			let index = 0;
+			let meterReading = 0;
+			let meterReading1 = 0;
+			let meterReading2 = 0;
+
+			for(const row of rows){
+				rowArray.push(row);
+				if(index >= 2){
+					if(!reverse){
+						endTimestamp = moment(rowArray[index][0], 'MM/DD/YY HH:mm:ss');
+						startTimestamp = moment(rowArray[index - 1][0], 'MM/DD/YY HH:mm:ss');
+					}
+					else {
+						startTimestamp = moment(rowArray[index][0], 'MM/DD/YY HH:mm:ss');
+						endTimestamp = moment(rowArray[index - 1][0], 'MM/DD/YY HH:mm:ss');
+					}
+					if(!cumulative){
+						meterReading = rowArray[index][1];
+						meterReading = meterReading.replace(' kWh', '');
+						meterReading = Math.round(parseFloat(meterReading));
+					}
+					else {
+						meterReading1 = rowArray[index - 1][1];
+						meterReading1 = meterReading1.replace(' kWh', '');
+						meterReading1 = Math.round(parseFloat(meterReading1));
+
+						// meterReading2
+						meterReading2 = rowArray[index][1];
+						meterReading2 = meterReading2.replace(' kWh', '');
+						meterReading2 = Math.round(parseFloat(meterReading2));
+						if(!reverse) {
+							meterReading = meterReading2 - meterReading1;
+						}
+						else {
+							meterReading = meterReading1 - meterReading2;
+						}
+					}
+					const newReading = new Reading(meterId, meterReading, startTimestamp.toDate(), endTimestamp.toDate());
+					readingArray.push(newReading);
+				}
+				index = index  + 1;
+			}
 
 			const id = parseInt(req.params.meter_id);
 			const myReadableStreamBuffer = new streamBuffers.ReadableStreamBuffer({
